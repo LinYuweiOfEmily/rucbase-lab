@@ -133,6 +133,7 @@ TEST_F(DiskManagerTest, PageOperation) {
     for (int page_no = 0; page_no < MAX_PAGES; page_no++) {
         // 分配页面编号
         int ret_page_no = disk_manager_->allocate_page(fd);  // 注意此处返回值是分配编号之前的值
+
         EXPECT_EQ(ret_page_no, page_no);
         // 读写页面
         rand_buf(data, PAGE_SIZE);                                // generate data

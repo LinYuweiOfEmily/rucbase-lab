@@ -100,6 +100,7 @@ TEST_F(BufferPoolManagerTest, SimpleTest) {
     snprintf(page0->get_data(), sizeof(page0->get_data()), "Hello");
     EXPECT_EQ(0, strcmp(page0->get_data(), "Hello"));
 
+
     // Scenario: We should be able to create new pages until we fill up the buffer pool.
     for (size_t i = 1; i < buffer_pool_size; ++i) {
         EXPECT_NE(nullptr, bpm->new_page(&tmp_page_id));
@@ -115,10 +116,10 @@ TEST_F(BufferPoolManagerTest, SimpleTest) {
     for (int i = 0; i < 5; ++i) {
         EXPECT_EQ(true, bpm->unpin_page(PageId{fd, i}, true));
     }
+
     for (int i = 0; i < 4; ++i) {
         EXPECT_NE(nullptr, bpm->new_page(&tmp_page_id));
     }
-
     // Scenario: We should be able to fetch the data we wrote a while ago.
     page0 = bpm->fetch_page(PageId{fd, 0});
     EXPECT_EQ(0, strcmp(page0->get_data(), "Hello"));
