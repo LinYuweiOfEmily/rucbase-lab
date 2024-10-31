@@ -264,16 +264,18 @@ class BPlusTreeTests : public ::testing::Test {
         if (!ih->is_empty()) {
             check_leaf(ih);
         }
-
         for (auto &entry : mock) {
             int mock_key = entry.first;
+
             // test lower bound
             {
                 auto mock_lower = mock.lower_bound(mock_key);        // multimap的lower_bound方法
                 Iid iid = ih->lower_bound((const char *)&mock_key);  // IxIndexHandle的lower_bound方法
+                
                 Rid rid = ih->get_rid(iid);
                 ASSERT_EQ(rid, mock_lower->second);
             }
+
             // test upper bound
             {
                 auto mock_upper = mock.upper_bound(mock_key);
@@ -284,6 +286,7 @@ class BPlusTreeTests : public ::testing::Test {
                 }
             }
         }
+
 
         // test scan
         IxScan scan(ih, ih->leaf_begin(), ih->leaf_end(), buffer_pool_manager_.get());
@@ -490,5 +493,7 @@ TEST_F(BPlusTreeTests, LargeScaleTest) {
         num++;
     }
     std::cout << "Insert keys count: " << add_cnt << '\n' << "Delete keys count: " << del_cnt << '\n';
+
+
     check_all(ih_.get(), mock);
 }
