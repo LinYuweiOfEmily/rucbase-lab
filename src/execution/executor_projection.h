@@ -21,7 +21,7 @@ class ProjectionExecutor : public AbstractExecutor {
     std::vector<ColMeta> cols_;                     // 需要投影的字段
     size_t len_;                                    // 字段总长度
     std::vector<size_t> sel_idxs_;                  
-
+    int limit_;
    public:
     ProjectionExecutor(std::unique_ptr<AbstractExecutor> prev, const std::vector<TabCol> &sel_cols) {
         prev_ = std::move(prev);
@@ -39,9 +39,15 @@ class ProjectionExecutor : public AbstractExecutor {
         len_ = curr_offset;
     }
 
-    void beginTuple() override {}
+    void beginTuple() override {
+        prev_->beginTuple();
 
-    void nextTuple() override {}
+    }
+
+    void nextTuple() override {
+
+
+    }
 
     std::unique_ptr<RmRecord> Next() override {
         return nullptr;

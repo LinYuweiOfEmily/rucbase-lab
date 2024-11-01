@@ -63,6 +63,31 @@ struct IndexMeta {
         }
         return is;
     }
+    bool operator==(const IndexMeta& other) const {
+        // 比较名称
+
+        std::vector<std::string> col_names;
+        col_names.reserve(cols.size());
+        for (auto &col: cols) {
+            col_names.emplace_back(col.name);
+        }
+        std::vector<std::string> col_names1;
+        col_names1.reserve(other.cols.size());
+        for (auto &col: other.cols) {
+            col_names1.emplace_back(col.name);
+        }
+        // 比较字段数量
+        if (cols.size() != other.cols.size()) {
+            return false;
+        }
+        // 比较每个字段
+        for (size_t i = 0; i < col_names.size(); ++i) {
+            if (!(col_names[i] == col_names1[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
 
 /* 表元数据 */

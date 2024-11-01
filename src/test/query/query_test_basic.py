@@ -22,6 +22,7 @@ def build():
     os.system("make rmdb -j4")
     os.system("make query_test -j4")
     os.chdir("..")
+    print("error_____")
     
 
 def run():

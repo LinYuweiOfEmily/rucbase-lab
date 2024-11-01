@@ -50,15 +50,98 @@ class SeqScanExecutor : public AbstractExecutor {
      *
      */
     void beginTuple() override {
-        
+        scan_ = std::make_unique<RmScan>(fh_);
+
+        for(; scan_->is_end(); scan_->next()) {
+            Rid rid = scan_->rid();
+            auto record = fh_->get_record(rid, context_);
+            if (cmp_conds(record.get(), conds_)) {
+                rid_ = rid;
+                break;
+            }
+
+        }
+
     }
 
+    bool cmp_conds(const RmRecord *rec, const std::vector<Condition> &conds) {
+        for (int i = 0; i < conds.size(); ++i) {
+            if (!cmp_cond(i, rec, conds[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+    // 判断是否满足单个谓词条件
+    // 判断是否满足单个谓词条件
+    bool cmp_cond(int i, const RmRecord *rec, const Condition &cond) {
+        auto lhs_col_meta = get_col_offset(cond.lhs_col);
+        const char *lhs_data = rec->data + lhs_col_meta.offset;
+        ColMeta rhs_col_meta;
+        char *rhs_data;
+        ColType rhs_type;
+        // 提取左值与右值的数据和类型
+        // 常值
+        if (cond.is_rhs_val) {
+            rhs_type = cond.rhs_val.type;
+            rhs_data = cond.rhs_val.raw->data;
+        } else  {
+            // 列值
+            rhs_col_meta = get_col_offset(cond.rhs_col);
+            rhs_type = rhs_col_meta.type;
+            rhs_data = rec->data + rhs_col_meta.offset;
+        }
+
+        if (lhs_col_meta.type != rhs_type) {
+            throw IncompatibleTypeError(coltype2str(lhs_col_meta.type), coltype2str(rhs_type));
+        }
+
+        int cmp = compare(lhs_data, rhs_data, lhs_col_meta.len, rhs_type);
+        switch (cond.op) {
+            case OP_EQ: return cmp == 0;
+            case OP_NE: return cmp != 0;
+            case OP_LT: return cmp < 0;
+            case OP_GT: return cmp > 0;
+            case OP_LE: return cmp <= 0;
+            case OP_GE: return cmp >= 0;
+            default:
+                throw InternalError("Unexpected op type！");
+        }
+    }
+    static inline int compare(const char *a, const char *b, int col_len, ColType col_type) {
+        switch (col_type) {
+            case TYPE_INT: {
+                const int ai = *reinterpret_cast<const int *>(a);
+                const int bi = *reinterpret_cast<const int *>(b);
+                return (ai > bi) - (ai < bi);
+            }
+            case TYPE_FLOAT: {
+                const float af = *reinterpret_cast<const float *>(a);
+                const float bf = *reinterpret_cast<const float *>(b);
+                return (af > bf) - (af < bf);
+            }
+            case TYPE_STRING:
+                return memcmp(a, b, col_len);
+            default:
+                throw InternalError("Unexpected data type！");
+        }
+    }
     /**
      * @brief 从当前scan_指向的记录开始迭代扫描,直到扫描到第一个满足谓词条件的元组停止,并赋值给rid_
      *
      */
     void nextTuple() override {
-        
+         if (scan_->is_end()) {
+            return;
+        }
+        for (scan_->next(); !scan_->is_end(); scan_->next()) {
+            Rid rid = scan_->rid();
+            auto record = fh_->get_record(rid, context_);
+            if (cmp_conds(record.get(), conds_)) {
+                rid_ = rid;
+                break;
+            }
+        }
     }
 
     /**
@@ -67,7 +150,7 @@ class SeqScanExecutor : public AbstractExecutor {
      * @return std::unique_ptr<RmRecord>
      */
     std::unique_ptr<RmRecord> Next() override {
-        return nullptr;
+        return fh_->get_record(rid_, context_);
     }
 
     Rid &rid() override { return rid_; }

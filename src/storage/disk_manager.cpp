@@ -158,7 +158,7 @@ int DiskManager::open_file(const std::string &path) {
     // 注意不能重复打开相同文件，并且需要更新文件打开列表
      // 先检查文件是否已打开
     if (path2fd_.count(path) > 0) {
-        return -1; // 如果已打开，直接返回文件描述符
+        return path2fd_[path]; // 如果已打开，直接返回文件描述符
     }
 
     // 检查文件是否存在
